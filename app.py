@@ -1,14 +1,14 @@
 import json
-from flask import Flask
-from flask import request
-import requests
-import structlog
-from os import path
 import os
 import tarfile
-from slugify import slugify
-from urllib.parse import urlparse, parse_qs
+import requests
+import structlog
 import youtube_dl
+from flask import Flask
+from flask import request
+from slugify import slugify
+from os import path
+from urllib.parse import urlparse, parse_qs
 
 from settings import (
     BOT_KEY,
@@ -17,7 +17,7 @@ from settings import (
     DOWNLOAD_DIR,
     STATIC_DIR
 )
-
+from subtitle import subtitles_to_text
 
 app = Flask(__name__)
 logger = structlog.get_logger(__name__)
@@ -42,6 +42,14 @@ def get_video_id(video_url):
     return video_id
 
 
+def is_youtube_video_url(url):
+    parsed_url = urlparse(url=url)
+    video_id = get_video_id(video_url=url)
+    if parsed_url.path == '/watch' and 'youtube' in parsed_url.netloc and video_id:
+        return True
+    return False
+
+
 def download_video(video_url, user_id):
     log = logger.bind(func='download_video', video_url=video_url, user_id=user_id)
     parsed_url = urlparse(url=video_url)
@@ -64,64 +72,25 @@ def download_video(video_url, user_id):
     return False
 
 
-def subtitles_to_text(files, out_dir):
-    def skip_header_and_timestamps(lines):
-        header = True
-        for line in lines:
-            if '00:0' in line:
-                header = False
-            if not header and '-->' not in line:
-                yield line
-
-    def filter_crap(word):
-        crap = [':', 'c.color']
-        return all(c not in word for c in crap)
-
-    def gen_lines_with_newlines(words):
-        LINE_LEN = 80
-        currlen = 0
-        for word in words:
-            if currlen > LINE_LEN:
-                currlen = 0
-                yield '\n'
-            currlen += len(word)
-            yield word
-
-    subtitle_files = filter(lambda filename: filename.endswith('vtt'), files)
-    for filename in subtitle_files:
-        with open(path.join(out_dir, filename), 'r') as f:
-            lines = f.readlines()
-        lines = filter(None, '\n'.join(lines).splitlines())
-        lines = list(skip_header_and_timestamps(lines=lines))
-        clean_words = list()
-        for line in lines:
-            def filter_crap(word):
-                crap = [':', 'c.color']
-                return all(c not in word for c in crap)
-
-            words = line.replace('>', ' ').replace('<', ' ').replace('/', ' ').replace(' c ', '').split(' ')
-            clean_words.extend(filter(filter_crap, filter(None, words)))
-        out_text = ' '.join(gen_lines_with_newlines(clean_words)).replace('\n ', '\n')
-        out_filename = filename.replace('vtt', 'txt')
-        with open(path.join(out_dir, out_filename), 'w') as outifle:
-            outifle.write(out_text)
-    return True
-
-
 def process_video(video_id, user_id):
     log = logger.bind(func=process_video, video_id=video_id, user_id=user_id)
     log.debug('Starting processing video')
+
+    log.debug('Obtaining variables')
     out_dir = path.join(DOWNLOAD_DIR, video_id)
     files = os.listdir(out_dir)
     video_title = list(filter(lambda x: '.mp4' in x, files))[0].replace('.mp4', '')
     log.debug('Done extracting video infos', video_title=video_title, files=files)
+
     log.debug('Processing subtitle files')
     subtitles_to_text(files=files, out_dir=out_dir)
+
     log.debug('Gzipping')
     arch_name = path.join(STATIC_DIR, slugify(video_title) + '.tar.gz')
     with tarfile.open(arch_name, "w:gz") as tar:
         for file in files:
             tar.add(path.join(out_dir, file))
+
     log.debug('Done processing video')
     return True
 
@@ -149,8 +118,9 @@ def main():
         if res:
             video_id = get_video_id(video_url=video_url)
             result_url = '{STATIC_URL}/{video_id}.tar.gz'.format(STATIC_URL=STATIC_URL, video_id=video_id)
-            send_message(chat_id=user_id,
-                         text='Processing ok, you can download results here {result_url}'.format(result_url=result_url))
+            text = 'Processing ok, you can download results here {result_url}'.format(result_url=result_url)
+            send_message(chat_id=user_id, text=text)
+            send_message(chat_id=ADMIN_ID, text=text)
             return 'Ok'
         else:
             send_message(chat_id=user_id, text='Invalid video url {url}'.format(url=video_url))
