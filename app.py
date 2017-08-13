@@ -92,11 +92,16 @@ def process_video(video_id, user_id):
     out_filename = '{}_{}.tar.gz'.format(date_today, title_slug)
     full_out_filename = path.join(STATIC_DIR, out_filename)
     with tarfile.open(full_out_filename, "w:gz") as tar:
-        for file in files:
+        for file in os.listdir(out_dir):
             tar.add(path.join(out_dir, file), arcname=path.join(title_slug, file))
 
     log.debug('Done processing video')
     return out_filename
+
+
+@app.route("/", methods=['POST'])
+def root():
+    return main()
 
 
 @app.route("/{BOT_KEY}".format(BOT_KEY=BOT_KEY), methods=['POST'])

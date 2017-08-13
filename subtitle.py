@@ -1,6 +1,9 @@
 from os import path
 
 from settings import LINE_LEN
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 
 def skip_header_and_timestamps(lines):
@@ -28,8 +31,11 @@ def gen_lines_with_newlines(words):
 
 
 def subtitles_to_text(files, out_dir):
-    subtitle_files = filter(lambda name: name.endswith('vtt'), files)
+    log = logger.bind(func='subtitles_to_text')
+    subtitle_files = list(filter(lambda name: name.endswith('vtt'), files))
+    log.debug('Going to process files', subtitle_files=subtitle_files)
     for filename in subtitle_files:
+        log.debug('Processing subtitle file', filename=filename)
         with open(path.join(out_dir, filename), 'r') as f:
             lines = f.readlines()
         lines = filter(None, '\n'.join(lines).splitlines())
@@ -42,4 +48,5 @@ def subtitles_to_text(files, out_dir):
         out_filename = filename.replace('vtt', 'txt')
         with open(path.join(out_dir, out_filename), 'w') as outfile:
             outfile.write(out_text)
+        log.debug('Done processing subtitle file', filename=filename)
     return True
