@@ -9,6 +9,7 @@ from flask import request
 from slugify import slugify
 from os import path
 from urllib.parse import urlparse, parse_qs
+from datetime import datetime
 
 from settings import (
     BOT_KEY,
@@ -86,14 +87,16 @@ def process_video(video_id, user_id):
     subtitles_to_text(files=files, out_dir=out_dir)
 
     log.debug('Gzipping')
-    arch_filename = slugify(video_title) + '.tar.gz'
-    arch_name = path.join(STATIC_DIR, arch_filename)
-    with tarfile.open(arch_name, "w:gz") as tar:
+    date_today = datetime.now().strftime('%Y-%m-%d')
+    title_slug = slugify(video_title)
+    out_filename = '{}_{}.tar.gz'.format(date_today, title_slug)
+    full_out_filename = path.join(STATIC_DIR, out_filename)
+    with tarfile.open(full_out_filename, "w:gz") as tar:
         for file in files:
-            tar.add(path.join(out_dir, file))
+            tar.add(path.join(out_dir, file), arcname=path.join(title_slug, file))
 
     log.debug('Done processing video')
-    return arch_filename
+    return out_filename
 
 
 @app.route("/{BOT_KEY}".format(BOT_KEY=BOT_KEY), methods=['POST'])
