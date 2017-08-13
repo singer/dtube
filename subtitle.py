@@ -44,7 +44,8 @@ def subtitles_to_text(files, out_dir):
         for line in lines:
             words = line.replace('>', ' ').replace('<', ' ').replace('/', ' ').replace(' c ', '').split(' ')
             clean_words.extend(filter(filter_crap, filter(None, words)))
-        out_text = ' '.join(gen_lines_with_newlines(clean_words)).replace('\n ', '\n')
+        # out_text = ' '.join(gen_lines_with_newlines(clean_words)).replace('\n ', '\n')
+        out_text = ' '.join(clean_words)
         out_filename = filename.replace('vtt', 'txt')
         with open(path.join(out_dir, out_filename), 'w') as outfile:
             outfile.write(out_text)
