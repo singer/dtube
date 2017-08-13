@@ -1,0 +1,57 @@
+django.log
+*.py[cod]
+*.pyc
+db.sqlite3
+# C extensions
+*.so
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+var
+sdist
+develop-eggs
+.installed.cfg
+lib64
+node_modules
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+nosetests.xml
+
+# Translations
+#*.mo
+
+# Mr Developer
+.mr.developer.cfg
+.project
+.pydevproject
+.idea
+/parser/export
+
+/static
+/images
+/uploads
+/download
+.ipynb_checkpoints
+
+celerybeat-schedule
+celerybeat.pid
+db.sqlite3
+/cache
+/geoip_data
+
+/notebooks/uploads
+/.idea/
+__pycache__/
+.cache/
+venv/
+settings_local.py
