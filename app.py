@@ -57,7 +57,7 @@ def download_video(video_url, user_id):
     video_id = get_video_id(video_url=video_url)
     log.debug('Downloading video')
     if parsed_url.path == '/watch' and 'youtube' in parsed_url.netloc and video_id:
-        send_message(chat_id=user_id, text='downloading youtube video:{}'.format(video_url))
+        send_message(chat_id=user_id, text='Now downloading youtube video: {}'.format(video_url))
         ydl_opts = dict(
             writeautomaticsub=True,
             writesubtitles=True,
