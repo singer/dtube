@@ -86,13 +86,14 @@ def process_video(video_id, user_id):
     subtitles_to_text(files=files, out_dir=out_dir)
 
     log.debug('Gzipping')
-    arch_name = path.join(STATIC_DIR, slugify(video_title) + '.tar.gz')
+    arch_filename = slugify(video_title) + '.tar.gz'
+    arch_name = path.join(STATIC_DIR, arch_filename)
     with tarfile.open(arch_name, "w:gz") as tar:
         for file in files:
             tar.add(path.join(out_dir, file))
 
     log.debug('Done processing video')
-    return True
+    return arch_filename
 
 
 @app.route("/{BOT_KEY}".format(BOT_KEY=BOT_KEY), methods=['POST'])
@@ -116,8 +117,7 @@ def main():
         res = download_video(video_url=video_url, user_id=user_id)
         log.debug('download video result', res=res)
         if res:
-            video_id = get_video_id(video_url=video_url)
-            result_url = '{STATIC_URL}/{video_id}.tar.gz'.format(STATIC_URL=STATIC_URL, video_id=video_id)
+            result_url = '{STATIC_URL}/{fname}'.format(STATIC_URL=STATIC_URL, fname=res)
             text = 'Processing ok, you can download results here {result_url}'.format(result_url=result_url)
             send_message(chat_id=user_id, text=text)
             send_message(chat_id=ADMIN_ID, text=text)
@@ -127,8 +127,10 @@ def main():
             return 'Invalid video'
     except Exception as e:  # Everything can happen
         log.exception('Download error', e=e, data=request.data, exc_info=True, stack_info=True)
-        send_message(chat_id=user_id, text='Something bad happened, this incident is reported.\n'
-                                           'Information above can help \n {}'.format(request.data))
+        text = 'Something bad happened, this incident is reported.\n' \
+               'Information above can help \n {}'.format(request.data)
+        send_message(chat_id=user_id, text=text)
+        send_message(chat_id=ADMIN_ID, text=text)
         return str(e)
 
 
