@@ -95,7 +95,7 @@ def process_video(video_id, user_id):
     return True
 
 
-@app.route("/", methods=['GET', 'POST'])
+@app.route("/{BOT_KEY}".format(BOT_KEY=BOT_KEY), methods=['POST'])
 def main():
     log = logger
     logger.info('Got request', data=request.data)
